@@ -38,7 +38,9 @@ const addProductHandler = (request, h) => {
     const filename = `image-${nanoid(16)}.jpg`;
     const data = image._data;
 
-    fs.writeFile(path.resolve(__dirname, `./image/${filename}`), data, (err) => {
+    console.log(path.resolve(__dirname, `/image/${filename}`));
+
+    fs.writeFile(path.resolve(__dirname, `/image/${filename}`), data, (err) => {
       if (err) {
         const response = h.response({
           status: 'fail',
@@ -141,7 +143,7 @@ const editProductByIdHandler = (request, h) => {
         let sql;
 
         if (checkOldFilename !== '') {
-          fs.writeFile(path.resolve(__dirname, `./image/${filename}`), data, (err) => {
+          fs.writeFile(path.resolve(__dirname, `/image/${filename}`), data, (err) => {
             if (err) {
               const response = h.response({
                 status: 'fail',
@@ -152,7 +154,7 @@ const editProductByIdHandler = (request, h) => {
             }
           });
 
-          fs.unlink(path.resolve(__dirname, `./image/${oldImage}`), (err) => {
+          fs.unlink(path.resolve(__dirname, `/image/${oldImage}`), (err) => {
             if (err) {
               const response = h.response({
                 status: 'fail',
@@ -207,7 +209,7 @@ const deleteProductByIdHandler = (request, h) => {
       if (typeof results !== 'undefined' && results.length > 0) {
         const oldImage = results[0].image;
 
-        fs.unlink(path.resolve(__dirname, `./image/${oldImage}`), (err) => {
+        fs.unlink(path.resolve(__dirname, `/image/${oldImage}`), (err) => {
           if (err) {
             const response = h.response({
               status: 'fail',
