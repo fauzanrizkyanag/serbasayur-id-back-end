@@ -38,8 +38,6 @@ const addProductHandler = (request, h) => {
     const filename = `image-${nanoid(16)}.jpg`;
     const data = image._data;
 
-    console.log(path.resolve(__dirname, `/image/${filename}`));
-
     fs.writeFile(path.resolve(__dirname, `/image/${filename}`), data, (err) => {
       if (err) {
         const response = h.response({
