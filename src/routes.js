@@ -5,14 +5,14 @@ const {
   getCategoryByIdHandler,
   editCategoryByIdHandler,
   deleteCategoryByIdHandler,
-} = require('./categories_handler');
+} = require('./handler/categories_handler');
 const {
   addProductHandler,
   getAllProductsHandler,
   getProductByIdHandler,
   editProductByIdHandler,
   deleteProductByIdHandler,
-} = require('./products_handler');
+} = require('./handler/products_handler');
 const {
   addUserHandler,
   getAllUsersHandler,
@@ -20,21 +20,27 @@ const {
   getUserByUsernamePasswordHandler,
   editUserByIdHandler,
   deleteUserByIdHandler,
-} = require('./users_handler');
+} = require('./handler/users_handler');
+const {
+  addCartHandler,
+  getAllCartsHandler,
+  getCartByIdHandler,
+  deleteCartByIdHandler,
+} = require('./handler/carts_handler');
 const {
   addOrderHandler,
   getAllOrdersHandler,
   getOrderByIdHandler,
   editOrderByIdHandler,
   deleteOrderByIdHandler,
-} = require('./orders_handler');
+} = require('./handler/orders_handler');
 const {
   addOrderItemHandler,
   getAllOrderItemsHandler,
   getOrderItemByIdHandler,
   editOrderItemByIdHandler,
   deleteOrderItemByIdHandler,
-} = require('./order_items_handler');
+} = require('./handler/order_items_handler');
 const {
   addAdminHandler,
   getAllAdminsHandler,
@@ -42,7 +48,28 @@ const {
   getAdminByUsernamePasswordHandler,
   editAdminByIdHandler,
   deleteAdminByIdHandler,
-} = require('./admins_handler');
+} = require('./handler/admins_handler');
+const {
+  addCartItemHandler,
+  getAllCartItemsHandler,
+  getCartItemByIdHandler,
+  editCartItemByIdHandler,
+  deleteCartItemByIdHandler,
+} = require('./handler/cart_items_handler');
+const {
+  addPaymentHandler,
+  getAllPaymentsHandler,
+  getPaymentByIdHandler,
+  editPaymentByIdHandler,
+  deletePaymentByIdHandler,
+} = require('./handler/payments_handler');
+const {
+  addShippingHandler,
+  getAllShippingsHandler,
+  getShippingByIdHandler,
+  editShippingByIdHandler,
+  deleteShippingByIdHandler,
+} = require('./handler/shippings_handler');
 
 const routes = [
   {
@@ -146,6 +173,51 @@ const routes = [
   },
   {
     method: 'POST',
+    path: '/carts',
+    handler: addCartHandler,
+  },
+  {
+    method: 'GET',
+    path: '/carts/{idUser}',
+    handler: getAllCartsHandler,
+  },
+  {
+    method: 'GET',
+    path: '/carts/{idUser}/{idCart}',
+    handler: getCartByIdHandler,
+  },
+  {
+    method: 'DELETE',
+    path: '/carts/{idUser}/{idCart}',
+    handler: deleteCartByIdHandler,
+  },
+  {
+    method: 'POST',
+    path: '/cartitems',
+    handler: addCartItemHandler,
+  },
+  {
+    method: 'GET',
+    path: '/cartitems/{idCart}',
+    handler: getAllCartItemsHandler,
+  },
+  {
+    method: 'GET',
+    path: '/cartitems/{idCart}/{idCartItem}',
+    handler: getCartItemByIdHandler,
+  },
+  {
+    method: 'PUT',
+    path: '/cartitems/{idCart}/{idCartItem}',
+    handler: editCartItemByIdHandler,
+  },
+  {
+    method: 'DELETE',
+    path: '/cartitems/{idCart}/{idCartItem}',
+    handler: deleteCartItemByIdHandler,
+  },
+  {
+    method: 'POST',
     path: '/orders',
     handler: addOrderHandler,
   },
@@ -193,6 +265,56 @@ const routes = [
     method: 'DELETE',
     path: '/orderitems/{idOrder}/{idOrderItem}',
     handler: deleteOrderItemByIdHandler,
+  },
+  {
+    method: 'POST',
+    path: '/payments',
+    handler: addPaymentHandler,
+  },
+  {
+    method: 'GET',
+    path: '/payments',
+    handler: getAllPaymentsHandler,
+  },
+  {
+    method: 'GET',
+    path: '/payments/{idPayment}',
+    handler: getPaymentByIdHandler,
+  },
+  {
+    method: 'PUT',
+    path: '/payments/{idPayment}',
+    handler: editPaymentByIdHandler,
+  },
+  {
+    method: 'DELETE',
+    path: '/payments/{idPayment}',
+    handler: deletePaymentByIdHandler,
+  },
+  {
+    method: 'POST',
+    path: '/shippings',
+    handler: addShippingHandler,
+  },
+  {
+    method: 'GET',
+    path: '/shippings',
+    handler: getAllShippingsHandler,
+  },
+  {
+    method: 'GET',
+    path: '/shippings/{idShipping}',
+    handler: getShippingByIdHandler,
+  },
+  {
+    method: 'PUT',
+    path: '/shippings/{idShipping}',
+    handler: editShippingByIdHandler,
+  },
+  {
+    method: 'DELETE',
+    path: '/shippings/{idShipping}',
+    handler: deleteShippingByIdHandler,
   },
   {
     method: 'POST',

@@ -1,19 +1,8 @@
 const { nanoid } = require('nanoid');
-const db = require('./db_config');
+const db = require('../db_config');
 
-async function getAllAdmins(callback) {
-  const sql = 'SELECT * FROM admins';
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      throw err;
-    }
-    return callback(Object.values(JSON.parse(JSON.stringify(results))));
-  });
-}
-
-async function getAdminById(idAdmin, callback) {
-  const sql = `SELECT * FROM admins WHERE id_admin='${idAdmin}'`;
+async function getAllUsers(callback) {
+  const sql = 'SELECT * FROM users';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -23,8 +12,8 @@ async function getAdminById(idAdmin, callback) {
   });
 }
 
-async function getAdminByUsernamePassword(username, password, callback) {
-  const sql = `SELECT * FROM admins WHERE username='${username}' AND password='${password}'`;
+async function getUserById(idUser, callback) {
+  const sql = `SELECT * FROM users WHERE id_user='${idUser}'`;
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -34,15 +23,68 @@ async function getAdminByUsernamePassword(username, password, callback) {
   });
 }
 
-const addAdminHandler = (request, h) => {
+async function getUserByUsernamePassword(username, password, callback) {
+  const sql = `SELECT * FROM users WHERE username='${username}' AND password='${password}'`;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      throw err;
+    }
+    return callback(Object.values(JSON.parse(JSON.stringify(results))));
+  });
+}
+
+async function checkEmail(email, callback) {
+  const sql = `SELECT * FROM users WHERE email='${email}'`;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      throw err;
+    }
+    return callback(Object.values(JSON.parse(JSON.stringify(results))));
+  });
+}
+
+async function checkTelephoneNumber(nomorTelepon, callback) {
+  const sql = `SELECT * FROM users WHERE nomor_telepon='${nomorTelepon}'`;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      throw err;
+    }
+    return callback(Object.values(JSON.parse(JSON.stringify(results))));
+  });
+}
+
+const addUserHandler = (request, h) => {
   const {
-    username, email, password,
+    username, email, password, nomor_telepon: nomorTelepon, alamat,
   } = request.payload;
 
-  const idAdmin = `admin-${nanoid(16)}`;
+  const idUser = `user-${nanoid(16)}`;
 
   const promise = new Promise((resolve) => {
-    const sql = `INSERT INTO admins(id_admin, username, email, password) VALUES ('${idAdmin}','${username}','${email}','${password}')`;
+    checkEmail(email, (results) => {
+      if (typeof results !== 'undefined' && results.length > 0) {
+        const response = {
+          status: 'fail',
+          message: 'Email harus unik',
+        };
+        resolve(response);
+      }
+    });
+
+    checkTelephoneNumber(nomorTelepon, (results) => {
+      if (typeof results !== 'undefined' && results.length > 0) {
+        const response = {
+          status: 'fail',
+          message: 'Nomor telepon harus unik',
+        };
+        resolve(response);
+      }
+    });
+
+    const sql = `INSERT INTO users(id_user, username, email, password, nomor_telepon, alamat) VALUES ('${idUser}','${username}','${email}','${password}','${nomorTelepon}','${alamat}')`;
 
     db.query(sql, (err) => {
       if (err) {
@@ -55,9 +97,9 @@ const addAdminHandler = (request, h) => {
       }
       const response = h.response({
         status: 'success',
-        message: 'User admin berhasil ditambahkan',
+        message: 'User berhasil ditambahkan',
         data: {
-          id_admin: idAdmin,
+          id_user: idUser,
         },
       });
       response.code(201);
@@ -68,17 +110,17 @@ const addAdminHandler = (request, h) => {
   return promise;
 };
 
-const getAllAdminsHandler = () => {
+const getAllUsersHandler = () => {
   const promise = new Promise((resolve) => {
-    getAllAdmins((results) => {
-      const adminsList = [];
+    getAllUsers((results) => {
+      const usersList = [];
       Object.keys(results).forEach((v) => {
-        adminsList.push(results[v]);
+        usersList.push(results[v]);
       });
       const response = {
         status: 'success',
         data: {
-          admins: adminsList,
+          users: usersList,
         },
       };
       resolve(response);
@@ -87,23 +129,23 @@ const getAllAdminsHandler = () => {
   return promise;
 };
 
-const getAdminByIdHandler = (request, h) => {
-  const { idAdmin } = request.params;
+const getUserByIdHandler = (request, h) => {
+  const { idUser } = request.params;
 
   const promise = new Promise((resolve) => {
-    getAdminById(idAdmin, (results) => {
+    getUserById(idUser, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
         const response = {
           status: 'success',
           data: {
-            admin: results[0],
+            user: results[0],
           },
         };
         resolve(response);
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'User admin tidak ditemukan',
+          message: 'User tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -113,11 +155,11 @@ const getAdminByIdHandler = (request, h) => {
   return promise;
 };
 
-const getAdminByUsernamePasswordHandler = (request, h) => {
+const getUserByUsernamePasswordHandler = (request, h) => {
   const { username, password } = request.payload;
 
   const promise = new Promise((resolve) => {
-    getAdminByUsernamePassword(username, password, (results) => {
+    getUserByUsernamePassword(username, password, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
         const response = {
           status: 'success',
@@ -139,17 +181,17 @@ const getAdminByUsernamePasswordHandler = (request, h) => {
   return promise;
 };
 
-const editAdminByIdHandler = (request, h) => {
-  const { idAdmin } = request.params;
+const editUserByIdHandler = (request, h) => {
+  const { idUser } = request.params;
 
   const {
-    username, email, password,
+    username, email, password, nomor_telepon: nomorTelepon, alamat,
   } = request.payload;
 
   const promise = new Promise((resolve) => {
-    getAdminById(idAdmin, (results) => {
+    getUserById(idUser, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
-        const sql = `UPDATE admins SET username='${username}',email='${email}',password='${password}' WHERE id_admin='${idAdmin}'`;
+        const sql = `UPDATE users SET username='${username}',email='${email}',password='${password}',nomor_telepon='${nomorTelepon}',alamat='${alamat}' WHERE id_user='${idUser}'`;
 
         db.query(sql, (err) => {
           if (err) {
@@ -162,7 +204,7 @@ const editAdminByIdHandler = (request, h) => {
           }
           const response = h.response({
             status: 'success',
-            message: 'User admin berhasil diperbarui',
+            message: 'User berhasil diperbarui',
           });
           response.code(200);
           resolve(response);
@@ -170,7 +212,7 @@ const editAdminByIdHandler = (request, h) => {
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'Gagal memperbarui user admin. Id tidak ditemukan',
+          message: 'Gagal memperbarui user. Id tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -181,13 +223,13 @@ const editAdminByIdHandler = (request, h) => {
   return promise;
 };
 
-const deleteAdminByIdHandler = (request, h) => {
-  const { idAdmin } = request.params;
+const deleteUserByIdHandler = (request, h) => {
+  const { idUser } = request.params;
 
   const promise = new Promise((resolve) => {
-    getAdminById(idAdmin, (results) => {
+    getUserById(idUser, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
-        const sql = `DELETE FROM admins WHERE id_admin='${idAdmin}'`;
+        const sql = `DELETE FROM users WHERE id_user='${idUser}'`;
 
         db.query(sql, (err) => {
           if (err) {
@@ -200,7 +242,7 @@ const deleteAdminByIdHandler = (request, h) => {
           }
           const response = h.response({
             status: 'success',
-            message: 'User admin berhasil dihapus',
+            message: 'User berhasil dihapus',
           });
           response.code(200);
           resolve(response);
@@ -208,7 +250,7 @@ const deleteAdminByIdHandler = (request, h) => {
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'User admin gagal dihapus. Id tidak ditemukan',
+          message: 'User gagal dihapus. Id tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -220,10 +262,10 @@ const deleteAdminByIdHandler = (request, h) => {
 };
 
 module.exports = {
-  addAdminHandler,
-  getAllAdminsHandler,
-  getAdminByIdHandler,
-  getAdminByUsernamePasswordHandler,
-  editAdminByIdHandler,
-  deleteAdminByIdHandler,
+  addUserHandler,
+  getAllUsersHandler,
+  getUserByIdHandler,
+  getUserByUsernamePasswordHandler,
+  editUserByIdHandler,
+  deleteUserByIdHandler,
 };

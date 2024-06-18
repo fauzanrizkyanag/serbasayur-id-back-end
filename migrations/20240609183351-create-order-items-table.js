@@ -9,17 +9,17 @@
 /* eslint-disable no-var */
 /* eslint-disable strict */
 
-'use strict';
+"use strict";
 
 var dbm;
 var type;
 var seed;
 
 /**
-  * We receive the dbmigrate dependency from dbmigrate initially.
-  * This enables us to not have to rely on NODE_PATH.
-  */
-exports.setup = function(options, seedLink) {
+ * We receive the dbmigrate dependency from dbmigrate initially.
+ * This enables us to not have to rely on NODE_PATH.
+ */
+exports.setup = function (options, seedLink) {
   dbm = options.dbmigrate;
   type = dbm.dataType;
   seed = seedLink;
@@ -54,15 +54,15 @@ exports.up = function(db, callback) {
         mapping: 'id_produk'
       }
     },
-    kuantitas: { type: 'bigint' },
-    harga_satuan: { type: 'bigint' },
+    quantity: { type: 'bigint' },
+    harga_unit: { type: 'bigint' },
   }, callback);
 };
 
 exports.down = function(db, callback) {
-  db.dropTable('order_items', callback);
+  db.dropTable('order_items', true, callback);
 };
 
 exports._meta = {
-  "version": 1
+  version: 1,
 };

@@ -1,19 +1,8 @@
 const { nanoid } = require('nanoid');
-const db = require('./db_config');
+const db = require('../db_config');
 
-async function getAllOrderItems(idOrder, callback) {
-  const sql = `SELECT * FROM order_items WHERE id_order='${idOrder}'`;
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      throw err;
-    }
-    return callback(Object.values(JSON.parse(JSON.stringify(results))));
-  });
-}
-
-async function getOrderItemById(idOrder, idOrderItem, callback) {
-  const sql = `SELECT * FROM order_items WHERE id_order_item='${idOrderItem}' AND id_order='${idOrder}'`;
+async function getAllShippings(callback) {
+  const sql = 'SELECT * FROM shippings';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -23,18 +12,30 @@ async function getOrderItemById(idOrder, idOrderItem, callback) {
   });
 }
 
-const addOrderItemHandler = (request, h) => {
+async function getShippingById(idShipping, callback) {
+  const sql = `SELECT * FROM shippings WHERE id_shipping='${idShipping}'`;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      throw err;
+    }
+    return callback(Object.values(JSON.parse(JSON.stringify(results))));
+  });
+}
+
+const addShippingHandler = (request, h) => {
   const {
     id_order: idOrder,
-    id_produk: idProduk,
-    kuantitas,
-    harga_satuan: hargaSatuan,
+    shipping_address: shippingAddress,
+    shipping_date: shippingDate,
+    delivery_date: deliveryDate,
+    shipping_status: shippingStatus,
   } = request.payload;
 
-  const idOrderItem = `orderitem-${nanoid(16)}`;
+  const idShipping = `shipping-${nanoid(16)}`;
 
   const promise = new Promise((resolve) => {
-    const sql = `INSERT INTO order_items(id_order_item, id_order, id_produk, kuantitas, harga_satuan) VALUES ('${idOrderItem}','${idOrder}','${idProduk}',${kuantitas},${hargaSatuan})`;
+    const sql = `INSERT INTO shippings(id_shipping, id_order, shipping_address, shipping_date, delivery_date, shipping_status) VALUES ('${idShipping}','${idOrder}','${shippingAddress}',${shippingDate},'${deliveryDate}','${shippingStatus}')`;
 
     db.query(sql, (err) => {
       if (err) {
@@ -47,10 +48,9 @@ const addOrderItemHandler = (request, h) => {
       }
       const response = h.response({
         status: 'success',
-        message: 'Item order berhasil ditambahkan',
+        message: 'Pengiriman berhasil ditambahkan',
         data: {
-          id_order: idOrder,
-          id_order_item: idOrderItem,
+          id_shipping: idShipping,
         },
       });
       response.code(201);
@@ -61,19 +61,17 @@ const addOrderItemHandler = (request, h) => {
   return promise;
 };
 
-const getAllOrderItemsHandler = (request) => {
-  const { idOrder } = request.params;
-
+const getAllShippingsHandler = () => {
   const promise = new Promise((resolve) => {
-    getAllOrderItems(idOrder, (results) => {
-      const orderItemsList = [];
+    getAllShippings((results) => {
+      const shippingsList = [];
       Object.keys(results).forEach((v) => {
-        orderItemsList.push(results[v]);
+        shippingsList.push(results[v]);
       });
       const response = {
         status: 'success',
         data: {
-          order_items: orderItemsList,
+          payments: shippingsList,
         },
       };
       resolve(response);
@@ -82,23 +80,23 @@ const getAllOrderItemsHandler = (request) => {
   return promise;
 };
 
-const getOrderItemByIdHandler = (request, h) => {
-  const { idOrder, idOrderItem } = request.params;
+const getShippingByIdHandler = (request, h) => {
+  const { idShipping } = request.params;
 
   const promise = new Promise((resolve) => {
-    getOrderItemById(idOrder, idOrderItem, (results) => {
+    getShippingById(idShipping, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
         const response = {
           status: 'success',
           data: {
-            order_item: results[0],
+            shipping: results[0],
           },
         };
         resolve(response);
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'Item order tidak ditemukan',
+          message: 'Pengiriman tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -108,19 +106,21 @@ const getOrderItemByIdHandler = (request, h) => {
   return promise;
 };
 
-const editOrderItemByIdHandler = (request, h) => {
-  const { idOrder, idOrderItem } = request.params;
+const editShippingByIdHandler = (request, h) => {
+  const { idShipping } = request.params;
 
   const {
-    id_produk: idProduk,
-    kuantitas,
-    harga_satuan: hargaSatuan,
+    id_order: idOrder,
+    shipping_address: shippingAddress,
+    shipping_date: shippingDate,
+    delivery_date: deliveryDate,
+    shipping_status: shippingStatus,
   } = request.payload;
 
   const promise = new Promise((resolve) => {
-    getOrderItemById(idOrder, idOrderItem, (results) => {
+    getShippingById(idShipping, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
-        const sql = `UPDATE order_items SET id_produk='${idProduk}',kuantitas=${kuantitas},harga_satuan=${hargaSatuan} WHERE id_order_item='${idOrderItem}' AND id_order='${idOrder}'`;
+        const sql = `UPDATE shippings SET id_order='${idOrder}',shipping_address='${shippingAddress}',shipping_date=${shippingDate},delivery_date='${deliveryDate}',shipping_status='${shippingStatus}' WHERE id_shipping='${idShipping}'`;
 
         db.query(sql, (err) => {
           if (err) {
@@ -133,7 +133,7 @@ const editOrderItemByIdHandler = (request, h) => {
           }
           const response = h.response({
             status: 'success',
-            message: 'Item order berhasil diperbarui',
+            message: 'Pengiriman berhasil diperbarui',
           });
           response.code(200);
           resolve(response);
@@ -141,7 +141,7 @@ const editOrderItemByIdHandler = (request, h) => {
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'Gagal memperbarui item order. Id tidak ditemukan',
+          message: 'Gagal memperbarui pengiriman. Id tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -152,13 +152,13 @@ const editOrderItemByIdHandler = (request, h) => {
   return promise;
 };
 
-const deleteOrderItemByIdHandler = (request, h) => {
-  const { idOrder, idOrderItem } = request.params;
+const deleteShippingByIdHandler = (request, h) => {
+  const { idShipping } = request.params;
 
   const promise = new Promise((resolve) => {
-    getOrderItemById(idOrder, idOrderItem, (results) => {
+    getShippingById(idShipping, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
-        const sql = `DELETE FROM order_items WHERE id_order_item='${idOrderItem}' AND id_order='${idOrder}'`;
+        const sql = `DELETE FROM shippings WHERE id_shipping='${idShipping}'`;
 
         db.query(sql, (err) => {
           if (err) {
@@ -171,7 +171,7 @@ const deleteOrderItemByIdHandler = (request, h) => {
           }
           const response = h.response({
             status: 'success',
-            message: 'Item order berhasil dihapus',
+            message: 'Pengiriman berhasil dihapus',
           });
           response.code(200);
           resolve(response);
@@ -179,7 +179,7 @@ const deleteOrderItemByIdHandler = (request, h) => {
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'Item order gagal dihapus. Id tidak ditemukan',
+          message: 'Pengiriman gagal dihapus. Id tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -191,9 +191,9 @@ const deleteOrderItemByIdHandler = (request, h) => {
 };
 
 module.exports = {
-  addOrderItemHandler,
-  getAllOrderItemsHandler,
-  getOrderItemByIdHandler,
-  editOrderItemByIdHandler,
-  deleteOrderItemByIdHandler,
+  addShippingHandler,
+  getAllShippingsHandler,
+  getShippingByIdHandler,
+  editShippingByIdHandler,
+  deleteShippingByIdHandler,
 };

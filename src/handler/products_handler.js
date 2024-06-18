@@ -2,7 +2,7 @@
 const { nanoid } = require('nanoid');
 const fs = require('fs');
 const path = require('path');
-const db = require('./db_config');
+const db = require('../db_config');
 
 async function getAllProducts(callback) {
   const sql = 'SELECT * FROM products';
@@ -28,7 +28,13 @@ async function getProductById(idProduk, callback) {
 
 const addProductHandler = (request, h) => {
   const {
-    nama, id_kategori: idKategori, deskripsi, harga, image, kuantitas, rating,
+    nama,
+    id_kategori: idKategori,
+    deskripsi,
+    harga,
+    image,
+    kuantitas,
+    rating,
   } = request.payload;
 
   const idProduk = `product-${nanoid(16)}`;
@@ -38,16 +44,29 @@ const addProductHandler = (request, h) => {
     const filename = `image-${nanoid(16)}.jpg`;
     const data = image._data;
 
-    fs.writeFile(path.resolve(__dirname, `/image/${filename}`), data, (err) => {
-      if (err) {
-        const response = h.response({
-          status: 'fail',
-          message: err.message,
-        });
-        response.code(500);
-        resolve(response);
-      }
-    });
+    if (image.hapi.headers['content-type'] !== 'image/jpeg') {
+      const response = h.response({
+        status: 'fail',
+        message: 'File gambar harus berformat jpg/jpeg',
+      });
+      response.code(400);
+      resolve(response);
+    }
+
+    fs.writeFile(
+      path.resolve(__dirname, `/image/${filename}`),
+      data,
+      (err) => {
+        if (err) {
+          const response = h.response({
+            status: 'fail',
+            message: err.message,
+          });
+          response.code(500);
+          resolve(response);
+        }
+      },
+    );
 
     const sql = `INSERT INTO products(id_produk, nama, id_kategori, deskripsi, harga, image, kuantitas, rating) VALUES ('${idProduk}','${nama}','${idKategori}','${deskripsi}',${harga},'${filename}',${kuantitas},${rating})`;
 
@@ -122,27 +141,42 @@ const getProductByIdHandler = (request, h) => {
 
 const editProductByIdHandler = (request, h) => {
   const { idProduk } = request.params;
-
   const {
-    nama, id_kategori: idKategori, deskripsi, harga, image, kuantitas, rating,
+    nama,
+    id_kategori: idKategori,
+    deskripsi,
+    harga,
+    image,
+    kuantitas,
+    rating,
   } = request.payload;
 
   const promise = new Promise((resolve) => {
     getProductById(idProduk, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
+        const oldImage = results[0].image;
+
         let sql;
+        let filename = oldImage; // Default to old image filename
 
-        if (typeof image !== 'undefined') {
-          const oldImage = results[0].image;
+        // Check if new image is uploaded
+        if (image && image.hapi.filename !== '') {
+          if (image.hapi.headers['content-type'] !== 'image/jpeg') {
+            const response = h.response({
+              status: 'fail',
+              message: 'File gambar harus berformat jpg/jpeg',
+            });
+            response.code(400);
+            resolve(response);
+          }
 
-          // eslint-disable-next-line prefer-destructuring
-          const filename = `image-${nanoid(16)}.jpg`;
+          filename = `image-${nanoid(16)}.jpg`;
           const data = image._data;
 
-          const checkOldFilename = image.hapi.filename;
-
-          if (checkOldFilename !== '') {
-            fs.writeFile(path.resolve(__dirname, `/image/${filename}`), data, (err) => {
+          fs.writeFile(
+            path.resolve(__dirname, `/image/${filename}`),
+            data,
+            (err) => {
               if (err) {
                 const response = h.response({
                   status: 'fail',
@@ -151,28 +185,31 @@ const editProductByIdHandler = (request, h) => {
                 response.code(500);
                 resolve(response);
               }
-            });
+            },
+          );
 
-            fs.unlink(path.resolve(__dirname, `/image/${oldImage}`), (err) => {
-              if (err) {
-                const response = h.response({
-                  status: 'fail',
-                  message: err.message,
-                });
-                response.code(500);
-                resolve(response);
-              }
-              console.log('file was deleted');
-            });
+          // Delete old image file
+          fs.unlink(path.resolve(__dirname, `/image/${oldImage}`), (err) => {
+            if (err) {
+              const response = h.response({
+                status: 'fail',
+                message: err.message,
+              });
+              response.code(500);
+              resolve(response);
+            }
+            console.log('Old file was deleted');
+          });
+        }
 
-            sql = `UPDATE products SET nama='${nama}',id_kategori='${idKategori}',deskripsi='${deskripsi}',harga=${harga},image='${filename}',kuantitas=${kuantitas},rating=${rating} WHERE id_produk='${idProduk}'`;
-          } else {
-            sql = `UPDATE products SET nama='${nama}',id_kategori='${idKategori}',deskripsi='${deskripsi}',harga=${harga},kuantitas=${kuantitas},rating=${rating} WHERE id_produk='${idProduk}'`;
-          }
+        // Construct SQL query based on whether image is updated or not
+        if (image && image.hapi.filename !== '') {
+          sql = `UPDATE products SET nama='${nama}',id_kategori='${idKategori}',deskripsi='${deskripsi}',harga=${harga},image='${filename}',kuantitas=${kuantitas},rating=${rating} WHERE id_produk='${idProduk}'`;
         } else {
           sql = `UPDATE products SET nama='${nama}',id_kategori='${idKategori}',deskripsi='${deskripsi}',harga=${harga},kuantitas=${kuantitas},rating=${rating} WHERE id_produk='${idProduk}'`;
         }
 
+        // Execute SQL query
         db.query(sql, (err) => {
           if (err) {
             const response = h.response({

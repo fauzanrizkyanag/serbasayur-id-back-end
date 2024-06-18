@@ -1,19 +1,8 @@
 const { nanoid } = require('nanoid');
-const db = require('./db_config');
+const db = require('../db_config');
 
-async function getAllUsers(callback) {
-  const sql = 'SELECT * FROM users';
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      throw err;
-    }
-    return callback(Object.values(JSON.parse(JSON.stringify(results))));
-  });
-}
-
-async function getUserById(idUser, callback) {
-  const sql = `SELECT * FROM users WHERE id_user='${idUser}'`;
+async function getAllPayments(callback) {
+  const sql = 'SELECT * FROM payments';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -23,8 +12,8 @@ async function getUserById(idUser, callback) {
   });
 }
 
-async function getUserByUsernamePassword(username, password, callback) {
-  const sql = `SELECT * FROM users WHERE username='${username}' AND password='${password}'`;
+async function getPaymentById(idPayment, callback) {
+  const sql = `SELECT * FROM payments WHERE id_payment='${idPayment}'`;
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -34,15 +23,19 @@ async function getUserByUsernamePassword(username, password, callback) {
   });
 }
 
-const addUserHandler = (request, h) => {
+const addPaymentHandler = (request, h) => {
   const {
-    username, email, password, nomor_telepon: nomorTelepon, alamat,
+    id_order: idOrder,
+    payment_date: paymentDate,
+    amount,
+    payment_method: paymentMethod,
+    payment_status: paymentStatus,
   } = request.payload;
 
-  const idUser = `user-${nanoid(16)}`;
+  const idPayment = `payment-${nanoid(16)}`;
 
   const promise = new Promise((resolve) => {
-    const sql = `INSERT INTO users(id_user, username, email, password, nomor_telepon, alamat) VALUES ('${idUser}','${username}','${email}','${password}','${nomorTelepon}','${alamat}')`;
+    const sql = `INSERT INTO payments(id_payment, id_order, payment_date, amount, payment_method, payment_status) VALUES ('${idPayment}','${idOrder}','${paymentDate}',${amount},'${paymentMethod}','${paymentStatus}')`;
 
     db.query(sql, (err) => {
       if (err) {
@@ -55,9 +48,9 @@ const addUserHandler = (request, h) => {
       }
       const response = h.response({
         status: 'success',
-        message: 'User berhasil ditambahkan',
+        message: 'Pembayaran berhasil ditambahkan',
         data: {
-          id_user: idUser,
+          id_payment: idPayment,
         },
       });
       response.code(201);
@@ -68,17 +61,17 @@ const addUserHandler = (request, h) => {
   return promise;
 };
 
-const getAllUsersHandler = () => {
+const getAllPaymentsHandler = () => {
   const promise = new Promise((resolve) => {
-    getAllUsers((results) => {
-      const usersList = [];
+    getAllPayments((results) => {
+      const paymentsList = [];
       Object.keys(results).forEach((v) => {
-        usersList.push(results[v]);
+        paymentsList.push(results[v]);
       });
       const response = {
         status: 'success',
         data: {
-          users: usersList,
+          payments: paymentsList,
         },
       };
       resolve(response);
@@ -87,23 +80,23 @@ const getAllUsersHandler = () => {
   return promise;
 };
 
-const getUserByIdHandler = (request, h) => {
-  const { idUser } = request.params;
+const getPaymentByIdHandler = (request, h) => {
+  const { idPayment } = request.params;
 
   const promise = new Promise((resolve) => {
-    getUserById(idUser, (results) => {
+    getPaymentById(idPayment, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
         const response = {
           status: 'success',
           data: {
-            user: results[0],
+            payment: results[0],
           },
         };
         resolve(response);
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'User tidak ditemukan',
+          message: 'Pembayaran tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -113,43 +106,21 @@ const getUserByIdHandler = (request, h) => {
   return promise;
 };
 
-const getUserByUsernamePasswordHandler = (request, h) => {
-  const { username, password } = request.payload;
-
-  const promise = new Promise((resolve) => {
-    getUserByUsernamePassword(username, password, (results) => {
-      if (typeof results !== 'undefined' && results.length > 0) {
-        const response = {
-          status: 'success',
-          data: {
-            user: results[0],
-          },
-        };
-        resolve(response);
-      } else {
-        const response = h.response({
-          status: 'fail',
-          message: 'Username/password salah',
-        });
-        response.code(404);
-        resolve(response);
-      }
-    });
-  });
-  return promise;
-};
-
-const editUserByIdHandler = (request, h) => {
-  const { idUser } = request.params;
+const editPaymentByIdHandler = (request, h) => {
+  const { idPayment } = request.params;
 
   const {
-    username, email, password, nomor_telepon: nomorTelepon, alamat,
+    id_order: idOrder,
+    payment_date: paymentDate,
+    amount,
+    payment_method: paymentMethod,
+    payment_status: paymentStatus,
   } = request.payload;
 
   const promise = new Promise((resolve) => {
-    getUserById(idUser, (results) => {
+    getPaymentById(idPayment, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
-        const sql = `UPDATE users SET username='${username}',email='${email}',password='${password}',nomor_telepon='${nomorTelepon}',alamat='${alamat}' WHERE id_user='${idUser}'`;
+        const sql = `UPDATE payments SET id_order='${idOrder}',payment_date='${paymentDate}',amount=${amount},payment_method='${paymentMethod}',payment_status='${paymentStatus}' WHERE id_payment='${idPayment}'`;
 
         db.query(sql, (err) => {
           if (err) {
@@ -162,7 +133,7 @@ const editUserByIdHandler = (request, h) => {
           }
           const response = h.response({
             status: 'success',
-            message: 'User berhasil diperbarui',
+            message: 'Pembayaran berhasil diperbarui',
           });
           response.code(200);
           resolve(response);
@@ -170,7 +141,7 @@ const editUserByIdHandler = (request, h) => {
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'Gagal memperbarui user. Id tidak ditemukan',
+          message: 'Gagal memperbarui pembayaran. Id tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -181,13 +152,13 @@ const editUserByIdHandler = (request, h) => {
   return promise;
 };
 
-const deleteUserByIdHandler = (request, h) => {
-  const { idUser } = request.params;
+const deletePaymentByIdHandler = (request, h) => {
+  const { idPayment } = request.params;
 
   const promise = new Promise((resolve) => {
-    getUserById(idUser, (results) => {
+    getPaymentById(idPayment, (results) => {
       if (typeof results !== 'undefined' && results.length > 0) {
-        const sql = `DELETE FROM users WHERE id_user='${idUser}'`;
+        const sql = `DELETE FROM payments WHERE id_payment='${idPayment}'`;
 
         db.query(sql, (err) => {
           if (err) {
@@ -200,7 +171,7 @@ const deleteUserByIdHandler = (request, h) => {
           }
           const response = h.response({
             status: 'success',
-            message: 'User berhasil dihapus',
+            message: 'Pembayaran berhasil dihapus',
           });
           response.code(200);
           resolve(response);
@@ -208,7 +179,7 @@ const deleteUserByIdHandler = (request, h) => {
       } else {
         const response = h.response({
           status: 'fail',
-          message: 'User gagal dihapus. Id tidak ditemukan',
+          message: 'Pembayaran gagal dihapus. Id tidak ditemukan',
         });
         response.code(404);
         resolve(response);
@@ -220,10 +191,9 @@ const deleteUserByIdHandler = (request, h) => {
 };
 
 module.exports = {
-  addUserHandler,
-  getAllUsersHandler,
-  getUserByIdHandler,
-  getUserByUsernamePasswordHandler,
-  editUserByIdHandler,
-  deleteUserByIdHandler,
+  addPaymentHandler,
+  getAllPaymentsHandler,
+  getPaymentByIdHandler,
+  editPaymentByIdHandler,
+  deletePaymentByIdHandler,
 };
